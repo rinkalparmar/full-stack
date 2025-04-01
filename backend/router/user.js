@@ -16,7 +16,7 @@ router.post('/add', [
     body('mobile', "enter only 10 digit").isLength({ min: 10, max: 10 }),
     body('city', "citycan not empty").notEmpty(),
     body('password', "password  enter 5 charachter").isLength({ min: 5 })], async (req, res) => {
-
+        let success = false;
         let result = validationResult(req);
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() });
@@ -41,8 +41,8 @@ router.post('/add', [
                 id: user.id
             };
             const token = jwt.sign(data, damiData);
-
-            res.json({ user, token });
+            success = true;
+            res.json({ user, token, success });
         } catch (error) {
             return res.status(400).json({ error: "server error found" });
         }
@@ -63,25 +63,25 @@ router.post('/login', [
         if (!result.isEmpty()) {
             return res.status(400).json({ errors: result.array() });
         }
-
+        let success = false;
         const { email, password } = req.body;
         try {
             const useremail = await User.findOne({ email });
             if (!useremail) {
-                return res.status(400).json({ error: "email not found" });
+                return res.status(400).json({success, error: "email not found" });
             }
             console.log("user found" + useremail);
 
             const compare = await bcrypt.compare(password, useremail.password);//this user come from above of added user
             if (!compare) {
-                return res.status(400).json({ error: "enter correct password" });
+                return res.status(400).json({ error: "enter correct password", success });
             }
             const data = {
                 id: useremail.id
             };
             const token = jwt.sign(data, damiData);
-
-            res.json({ useremail, token });
+            success = true;
+            res.json({ useremail, token, success });
 
         } catch (error) {
             return res.status(400).json({ error: "server error found" });
@@ -121,25 +121,25 @@ router.delete('/delete/:id', fetchUser, async (req, res) => {
 
 //@@@@@@@@@@@@@@@@ update user put /user/update/id
 router.put('/update/:id', fetchUser, async (req, res) => {
-   try {
-     const { name, email, address, mobile, city, password } = req.body;
-    const newobj = {};
-    if (name) { newobj.name = name; };
-    if (email) { newobj.email = email; };
-    if (address) { newobj.address = address; };
-    if (mobile) { newobj.mobile = mobile; };
-    if (city) { newobj.city = city; };
-    if (password) { newobj.password = password; };
+    try {
+        const { name, email, address, mobile, city, password } = req.body;
+        const newobj = {};
+        if (name) { newobj.name = name; };
+        if (email) { newobj.email = email; };
+        if (address) { newobj.address = address; };
+        if (mobile) { newobj.mobile = mobile; };
+        if (city) { newobj.city = city; };
+        if (password) { newobj.password = password; };
 
-    let updateid =await User.findById(req.params.id);
-    if (!updateid) {
-        return res.status(401).json({ error: "id not found" });
+        let updateid = await User.findById(req.params.id);
+        if (!updateid) {
+            return res.status(401).json({ error: "id not found" });
+        }
+        updateid = await User.findByIdAndUpdate(req.params.id, { $set: newobj }, { new: true });
+        res.json({ updateid });
+    } catch (error) {
+
     }
-    updateid =await User.findByIdAndUpdate(req.params.id, { $set: newobj }, { new: true });
-    res.json({ updateid });
-   } catch (error) {
-    
-   }
 
 });
 
